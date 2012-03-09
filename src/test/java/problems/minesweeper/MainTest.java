@@ -3,10 +3,8 @@ package problems.minesweeper;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.print.DocFlavor;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.StringReader;
+import problems.minesweeper.Main;
 
 public class MainTest {
     

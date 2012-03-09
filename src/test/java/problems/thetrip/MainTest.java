@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
+import problems.thetrip.Main;
 
 public class MainTest {
     Main test;
@@ -24,7 +25,7 @@ public class MainTest {
                                                 "$2.25\n" +
                                                 "$4.73\n" +
                                                 "$0.02\n"+
-                                                "$0.02";
+                                                "$0.02\n";
 
     private static ByteArrayOutputStream testOut = new ByteArrayOutputStream();
 

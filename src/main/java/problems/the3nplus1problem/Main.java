@@ -1,9 +1,8 @@
 package problems.the3nplus1problem;
 
 import java.io.*;
-import java.util.*;
 
-class Main {
+public class Main {
 
     public void begin() {
         String input;

@@ -2,6 +2,8 @@ package problems.the3nplus1problem;
 
 import org.junit.Test;
 
+import problems.the3nplus1problem.Main;
+
 import static org.junit.Assert.assertEquals;
 
 
