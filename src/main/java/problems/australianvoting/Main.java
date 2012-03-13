@@ -10,14 +10,15 @@ import static java.lang.System.out;
 
 public class Main {
 
+    public static final int MAX_LG = 10000;
     private List<Election> elections;
 
     
     public void solution() {
         elections = new ArrayList<Election>();
-        String input = Main.readLn(255);
+        String input = Main.readLn(MAX_LG);
         int numberOfElections = Integer.parseInt(input.trim());
-        Main.readLn(255);//one line after elections size
+        Main.readLn(MAX_LG);//one line after elections size
         readElectionData(numberOfElections);
         Iterator<Election> i = elections.iterator();
         while (i.hasNext()) {
@@ -38,12 +39,12 @@ public class Main {
     }
 
     private void readCandidates(Election election) {
-        String input = Main.readLn(255);
+        String input = Main.readLn(MAX_LG);
         while(input == null || input.equals(""))
-            input = Main.readLn(255);
+            input = Main.readLn(MAX_LG);
         int numberOfCandidates = Integer.parseInt(input.trim());
         for (int i=0;i<numberOfCandidates;i++) {
-            String name = Main.readLn(255);
+            String name = Main.readLn(MAX_LG);
             election.addCandidate(name);
         }
     }
@@ -51,7 +52,7 @@ public class Main {
     private void readVotes(Election election) {
         String voteRow;
 
-        while ((voteRow = Main.readLn(255)) != null) {
+        while ((voteRow = Main.readLn(MAX_LG)) != null) {
            if(voteRow.equals("")) return;
            String[] votes = voteRow.trim().split("\\s+");
            election.vote(votes);
