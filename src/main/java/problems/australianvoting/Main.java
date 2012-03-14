@@ -93,7 +93,7 @@ public class Main {
                 printWinner(candidates,fifty);
             }else {
                 List<String> min = findMinCandidates(candidates, percentages);
-                if(candidates.size() - min.size() == 0){ //It is tied si we must print solution before removing all candidates
+                if(candidates.size() - min.size() == 0){ //It isValid tied si we must print solution before removing all candidates
                     printWinner(candidates);
                     return;
                 }
