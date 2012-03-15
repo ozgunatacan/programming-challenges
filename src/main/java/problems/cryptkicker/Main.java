@@ -369,9 +369,8 @@ public class Main {
     }
 
     ////////////////////////////////////JUDGE RELATED////////////////////////////////////
-    public static final int READ_SIZE = 256;
+    public static final int READ_SIZE = 1000;
 
-    
     public static void setTestData(InputStream testIn,PrintStream testOut) {
         System.setIn(testIn);
         System.setOut(testOut);
