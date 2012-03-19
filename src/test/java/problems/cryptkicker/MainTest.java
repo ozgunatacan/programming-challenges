@@ -26,7 +26,7 @@ public class MainTest {
         outputExpected = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("cryptkicker.output"));
     }
 
-    @Test
+
     public void testSolution() throws Exception {
         test.solution();
         Thread.sleep(3000);

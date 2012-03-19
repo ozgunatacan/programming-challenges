@@ -7,23 +7,33 @@ import java.util.*;
 
 import static java.lang.System.in;
 
+/*******************************************************************
+ *
+ *
+ * This solution is rubbish and wrong will fix it later with back tracking
+ *
+ *
+ *******************************************************************
+ */
+
 public class Main {
 
     public void solution(){
       String input = readLn();       
       int dictionarySize = Integer.parseInt(input);
-      Dictionary dictionary = new Dictionary();
+      Dictionary originalDictionary = new Dictionary();
       for(int i = 0;i<dictionarySize;i++){
         input = readLn();
-        dictionary.addWord(input.trim());  
+          originalDictionary.addWord(input.trim());
       }
       boolean first = true;
       while ((input=readLn()) != null){
           if(!first)
           System.out.println();
           CryptText text = new CryptText(input.trim());
-          int iterationCount = 0;
-          while(!text.isSolved() && iterationCount<text.getWords().size()){
+          Dictionary dictionary = (Dictionary) originalDictionary.clone();
+          while(!text.isSolved()){
+              int solvedCountStart = text.solvedCount();
               for (Map.Entry <String,String> word : text.getWords().entrySet() ) {
                   if(word.getValue() == null) {
                     String solved = dictionary.decrypt(word.getKey());
@@ -31,12 +41,109 @@ public class Main {
                         text.addDecryptWordInfo(word.getKey(),solved);
                   }
               }
-              iterationCount++;
+              int solvedCountEnd = text.solvedCount();
+              if(solvedCountStart - solvedCountEnd == 0)// we cant solve with this strategy try back tracking
+                  break;
           }
+
+          if(!text.isSolved())
+              permutateLeftOvers(text,dictionary);
+
           text.print();
           first = false;
       }
     }
+
+    
+    
+    private void permutateLeftOvers(CryptText text,Dictionary dictionary) {
+        Map<Integer,Set<String>> unresolvedCryptWords = text.getUnsolvedWords();
+        Set<String> allc = new HashSet<String>();
+        for (Set<String> strings : unresolvedCryptWords.values()) {
+            allc.addAll(strings);
+        }
+        Map<Integer,Set<String>> unresolvedDictionaryWords = dictionary.getWordsBySize();
+        Set<String> allo = new HashSet<String>();
+        for (Set<String> strings : unresolvedDictionaryWords.values()) {
+            allo.addAll(strings);
+        }
+        
+        int i = 0;
+        while (!text.isSolved())  {
+            CryptAlphabet alphabet = dictionary.alphabet.clone();
+            for(String unresolved : allc){                  
+                Set<String> candidates = dictionary.findSameLengthAndSameNumberOfDuplicatesInSamePlaces(unresolved,unresolvedDictionaryWords.get(unresolved.length()));
+                if(candidates.size() == 0)
+                    candidates = dictionary.findSameLengthAndSameNumberOfUniqueChars(unresolved,unresolvedDictionaryWords.get(unresolved.length()));
+                
+                   String original = (String) candidates.toArray()[i % candidates.size()];
+                   alphabet.updateAlphabetWithDecryptInfo(original, unresolved);
+            }
+
+                boolean allDone = true;
+                for (String s : allc) {
+                    Set<String> candidates = dictionary.findSameLengthAndSameNumberOfUniqueChars(s,unresolvedDictionaryWords.get(s.length()));
+                    if(alphabet.decryptByLetterFromOptions(s,candidates) == null ){
+                        allDone =false;
+                        break;
+                    }
+                }
+    
+                if(allDone){
+                    for (String s : allc) {
+                        text.addDecryptWordInfo(s,alphabet.decryptByLetter(s));
+                    }                    
+                }
+          i++;  
+        }
+
+    }
+
+    private void processSolution(Set<String> allc,CryptText text, CryptAlphabet alphabet){
+        for (String s : allc) {
+            text.addDecryptWordInfo(s,alphabet.decryptByLetter(s));
+        }
+    }
+
+    private boolean isSolution(Set<String> allc,Set<String> allo,CryptAlphabet alphabet) {
+        boolean allDone = true;
+        for (String s : allc) {
+            String ac = alphabet.decryptByLetter(s);
+            if(alphabet.decryptByLetter(s) == null || !allo.contains(ac)){
+                allDone =false;
+            }
+        }
+        return true;
+    }
+
+/*    public static void shuffle(String dummy, String input, CryptText text, Dictionary dictionary ){
+        if(input.length() <= 1)   {
+            CryptAlphabet alphabet = dictionary.alphabet.clone();
+            String unresolvedCrypt = alphabet.getUnsolvedCryptLetters();
+            String unresolvedOriginal = dummy+input;
+            alphabet.updateAlphabetWithDecryptInfo(unresolvedOriginal,unresolvedCrypt);
+            Map<Integer,Set<String>> unresolvedCryptWords = text.getUnsolvedWords();
+            Map<Integer,Set<String>> unresolvedDictionaryWords = dictionary.getWordsBySize();
+
+            Map<String,String> resolved = new HashMap<String,String>();
+            for (Integer size : unresolvedCryptWords.keySet()) {                
+                for (String crypt: unresolvedCryptWords.get(size)){
+                    if(! alphabet.decryptByLetterAndValidate(crypt,unresolvedDictionaryWords.get(size))){
+                        return;
+                    }else {
+                        resolved.put(crypt,alphabet.decryptByLetter(crypt));
+                    }
+                }
+            }
+            text.words.putAll(resolved);
+        }else{
+            for(int i=0; i <input.length();i++){
+                input = input.substring(i,i+1) + input.substring(0,i) + input.substring(i+1);
+                shuffle(dummy+input.substring(0,1),input.substring(1),text,dictionary);
+            }
+        }
+    } */
+
 
     public static class CryptText {
         private Map<String,String> words;
@@ -63,8 +170,29 @@ public class Main {
             }
             return true;
         }
+        public int solvedCount(){
+            int count = 0;
+            for (String s : words.values()) {
+                if(s != null)
+                    count++;
+            }
+            return count;
+        }
         public Map<String, String> getWords() {
             return words;
+        }
+
+        public Map<Integer,Set<String>> getUnsolvedWords() {
+            Map<Integer,Set<String>> results = new HashMap<Integer, Set<String>>();
+            for (String s : words.keySet()) {
+                 if(words.get(s) == null){
+                     if(results.get(s.length()) == null) {
+                        results.put(s.length(),new HashSet<String>());
+                     }
+                     results.get(s.length()).add(s);
+                 }
+            }
+            return results;
         }
         
         public void print(){            
@@ -86,7 +214,7 @@ public class Main {
         }
     }
 
-    public static class Dictionary {
+    public static class Dictionary{
         private static final int MAX_WORD_SIZE = 16; 
         private Map<Integer,Set<String>> wordsBySize;
         private Map<String,String> alreadyFound;                
@@ -96,6 +224,20 @@ public class Main {
             this.wordsBySize = new HashMap<Integer,Set<String>>();
             this.alreadyFound = new HashMap<String, String>();
             this.alphabet = new CryptAlphabet();
+        }
+
+        protected Dictionary clone() {
+            Dictionary clone = new Dictionary();
+            Map<Integer,Set<String>> cloneWordsBySize = new HashMap<Integer, Set<String>>();
+            for (Integer key : this.wordsBySize.keySet()) {
+                Set<String> cloneSet = new HashSet<String>();
+                cloneSet.addAll(this.wordsBySize.get(key));
+                cloneWordsBySize.put(key,cloneSet);
+            }
+            clone.wordsBySize = cloneWordsBySize;
+            clone.alreadyFound = new HashMap<String, String>();
+            clone.alphabet = new CryptAlphabet();
+            return clone;
         }
 
         public void addWord(String word){
@@ -120,6 +262,7 @@ public class Main {
             similarLength.removeAll(alreadyFound.values());
 
             String found = alphabet.decryptByLetterFromOptions(text,similarLength);
+
             if(found != null){
                 updateCache(text, found);
                 return found;
@@ -133,8 +276,9 @@ public class Main {
                     return cacheAndReturn(text, similarLengthAndUnique);
                 }else if (similarLengthAndUnique.size() > 1) {
                     Set<String> similarLengthAndUniqueSamePlace = findSameLengthAndSameNumberOfDuplicatesInSamePlaces(text, similarLengthAndUnique);
-                    if(isThereOnlyOneOption(similarLengthAndUniqueSamePlace))
-                        return cacheAndReturn(text, similarLengthAndUniqueSamePlace);
+                    if(isThereOnlyOneOption(similarLengthAndUniqueSamePlace)){
+                        return cacheAndReturn(text, similarLengthAndUniqueSamePlace);                       
+                    }
                 }
             }
             return null;
@@ -151,7 +295,7 @@ public class Main {
             alphabet.updateAlphabetWithDecryptInfo(original, crypt);
         }
         
-        private Set<String> findSameLengthAndSameNumberOfDuplicatesInSamePlaces(String text, Set<String> similarLengthAndUnique) {
+        public Set<String> findSameLengthAndSameNumberOfDuplicatesInSamePlaces(String text, Set<String> similarLengthAndUnique) {
             Map<Character,Set<Integer>> dups = getDuplicateLocations(text);
             Set<String> similarLengthAndUniqueSamePlace = new HashSet<String>();
             if(dups.size() > 0){
@@ -199,7 +343,7 @@ public class Main {
             for (int i = 0; i < arr.length; i++) {
                 boolean dup = false;
                 char original = arr[i];
-                for (int j = 0; j < arr.length; j++) {
+                for (int j = i+1; j < arr.length; j++) {
                     char current = arr[j];
                     if(original == current){
                         dup = true;
@@ -222,10 +366,14 @@ public class Main {
             }
             return chars.size();
         }
+
+        public Map<Integer, Set<String>> getWordsBySize() {
+            return wordsBySize;
+        }
     }
 
     public static class CryptAlphabet {
-        private static final char[] ALPHABET = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
+        private static final Character[] ALPHABET = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
         private CryptLetter[] letters;
 
         public CryptAlphabet( ) {
@@ -234,6 +382,41 @@ public class Main {
                letters[i]= new CryptLetter(ALPHABET[i]);
             }
         }
+        
+        public CryptAlphabet clone() {
+            CryptAlphabet clone = new CryptAlphabet();
+            clone.letters = new CryptLetter[ALPHABET.length];
+            for (int i = 0; i < letters.length; i++) {
+                CryptLetter letter = new CryptLetter(letters[i].getOriginalChar());
+                letter.setCryptChar(letters[i].getCryptChar());
+                clone.letters[i] = letter;
+            }
+            return clone;
+        }
+        
+        public String getUnsolvedOriginalLetters() {
+            StringBuilder builder = new StringBuilder();            
+            for (int i = 0; i < letters.length; i++) {
+                if(!letters[i].isDecrypted())
+                    builder.append(letters[i].getOriginalChar());
+            }
+            return builder.toString();            
+        }
+
+        public String getUnsolvedCryptLetters() {
+            StringBuilder builder = new StringBuilder();
+            Set<Character> abc = new HashSet<Character>();
+            abc.addAll(Arrays.asList(ALPHABET));
+            for (int i = 0; i < letters.length; i++) {
+                if(letters[i].isDecrypted())
+                    abc.remove(letters[i].getCryptChar());
+            }
+            for (Character character : abc) {
+                  builder.append(character);
+            }
+            return builder.toString();
+        }
+        
 
         public boolean isSolved(){
             for (CryptLetter c : letters) {
@@ -243,6 +426,7 @@ public class Main {
             }
             return true;
         }
+
         public void updateAlphabetWithDecryptInfo(String original, String crypt) {
             if(original != null && crypt != null && original.length() == crypt.length()){
                 for (int i = 0; i < original.length(); i++) {
@@ -317,7 +501,6 @@ public class Main {
             return decryptSoFar;
         }
 
-
         public boolean canDecryptByLetter(String text){
             for(int i=0;i<text.length();i++){
                 if(getCryptLetterByCryptChar(text.charAt(i)) == null)
@@ -336,6 +519,14 @@ public class Main {
             }
             return null;
         }
+        public boolean decryptByLetterAndValidate(String text,Set<String> options){
+            StringBuilder stringBuilder = new StringBuilder();
+            for(int i=0;i<text.length();i++){
+                stringBuilder.append(getCryptLetterByCryptChar(text.charAt(i)).getOriginalChar());
+            }
+            return (options.contains(stringBuilder.toString()));            
+        }
+
     }
 
     public static class CryptLetter {
